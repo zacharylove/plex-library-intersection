@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plex Library Intersection - Web App
 
-## Getting Started
+A web-based interface for comparing Plex libraries. Find movies and shows in friends' libraries that you don't have.
 
-First, run the development server:
+## Features
+
+- **Plex OAuth Login** - Secure authentication via Plex
+- **Library Comparison** - Compare your library against multiple friends' libraries
+- **Visual Overlap** - Interactive Venn diagram showing shared content
+- **Library Similarity** - Percentage-based similarity scores between libraries
+- **Filtering & Sorting** - Filter by type, year, resolution, and more
+- **Pagination** - Browse through large result sets easily
+- **CSV Export** - Download filtered results as CSV
+- **Dark/Light Mode** - Theme toggle with smooth transitions
+- **Color-Coded Libraries** - Each library gets a distinct color for easy identification
+
+## Prerequisites
+
+- Node.js 18+ 
+- A Plex account with access to shared libraries
+
+## Setup
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Copy the environment file:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. Configure `.env.local` with your Plex app credentials:
+   ```
+   NEXT_PUBLIC_PLEX_CLIENT_ID=your-unique-client-id
+   ```
+
+   You can generate a unique client ID or use any unique string.
+
+## Development
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Sign in** with your Plex account
+2. **Select your library** (Step 1) - Choose the library you want to compare against
+3. **Select friends' libraries** (Step 2) - Choose one or more libraries to compare
+4. **Click Compare** - The app will fetch and analyze the libraries
+5. **View Results**:
+   - **Library Overlap** - Venn diagram visualization
+   - **Library Similarity** - Similarity percentages with progress bars
+   - **Summary** - Total missing and unique items
+   - **Library Breakdown** - Per-library statistics
+   - **Missing Items** - Paginated table of items you don't have
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - UI component library
+- **Radix UI** - Accessible component primitives
+- **Lucide React** - Icon library
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Docker
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Build and Run Locally
 
-## Deploy on Vercel
+```bash
+# Build the image
+docker build -t plex-library-intersection .
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Run the container
+docker run -p 3000:3000 plex-library-intersection
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Using Pre-built Image
+
+Pull from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/YOUR_USERNAME/plex-library-intersection:latest
+docker run -p 3000:3000 ghcr.io/YOUR_USERNAME/plex-library-intersection:latest
+```
+
+### Docker Compose
+
+Create a `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+services:
+  plex-library-intersection:
+    image: ghcr.io/YOUR_USERNAME/plex-library-intersection:latest
+    # Or build locally:
+    # build: .
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+```
+
+Run with:
+```bash
+docker-compose up -d
+```
+
+## Deployment
+
+### Vercel / Netlify
+
+Deploy to Vercel, Netlify, or any platform supporting Next.js:
+
+```bash
+npm run build
+npm start
+```
+
+For Vercel:
+```bash
+vercel
+```
+
+### Self-Hosted (Docker)
+
+The GitHub Actions workflow automatically builds and pushes Docker images to GitHub Container Registry on every commit to main/master.
