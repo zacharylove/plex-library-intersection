@@ -9,6 +9,10 @@ RUN npm ci --only=production
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# Base path for subfolder deployment (e.g., /plexintersection)
+ARG NEXT_PUBLIC_BASE_PATH=""
+ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
+
 COPY package.json package-lock.json* ./
 RUN npm ci
 
