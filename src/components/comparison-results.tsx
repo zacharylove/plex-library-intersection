@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { VennDiagram } from './venn-diagram';
 import type { ComparisonResult, VennData, LibraryWithItems, LibrarySource } from '@/lib/types';
 import { getStatistics, exportToCSV, calculateVennData, calculateSimilarities, LibrarySimilarity } from '@/lib/comparison';
-import { ArrowLeft, Download, Film, Tv, Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, Copy } from 'lucide-react';
+import { Download, Film, Tv, Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, Copy, Settings2 } from 'lucide-react';
 import { createMediaKey } from '@/lib/comparison';
 
 // Check if a color is light (returns true) or dark (returns false)
@@ -194,7 +194,7 @@ function LibraryBadge({ source, color }: { source: LibrarySource; color?: string
       
       {isOpen && source.media && source.media.length > 0 && (
         <div 
-          className="absolute left-0 top-full mt-1 p-2 bg-popover border rounded-md shadow-lg min-w-[250px] max-w-[350px] z-[9999]"
+          className="absolute left-0 top-full mt-1 p-2 bg-popover border shadow-lg min-w-[250px] max-w-[350px] z-[9999]"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -235,15 +235,12 @@ interface ComparisonResultsProps {
   result: ComparisonResult;
   baseLibraryWithItems: LibraryWithItems;
   comparedLibrariesWithItems: LibraryWithItems[];
-  onBack: () => void;
-  onNewComparison?: () => void;
 }
 
 export function ComparisonResults({
   result,
   baseLibraryWithItems,
   comparedLibrariesWithItems,
-  onBack,
 }: ComparisonResultsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'movie' | 'show'>('all');
@@ -260,6 +257,40 @@ export function ComparisonResults({
   
   // Filter section collapse state
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  
+  // Column visibility state
+  const [columnsCollapsed, setColumnsCollapsed] = useState(true);
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => 
+    new Set(['title', 'year', 'runtime', 'availableIn'])
+  );
+  
+  // All available columns with labels
+  const allColumns = [
+    { id: 'title', label: 'Title', default: true },
+    { id: 'year', label: 'Year', default: true },
+    { id: 'runtime', label: 'Runtime', default: true },
+    { id: 'rating', label: 'Rating', default: false },
+    { id: 'audienceRating', label: 'Audience Rating', default: false },
+    { id: 'resolution', label: 'Resolution', default: false },
+    { id: 'availableIn', label: 'Available In', default: true },
+  ];
+  
+  const toggleColumn = (columnId: string) => {
+    const newSet = new Set(visibleColumns);
+    if (newSet.has(columnId)) {
+      // Don't allow hiding title column
+      if (columnId !== 'title') {
+        newSet.delete(columnId);
+      }
+    } else {
+      newSet.add(columnId);
+    }
+    setVisibleColumns(newSet);
+  };
+  
+  const resetColumns = () => {
+    setVisibleColumns(new Set(allColumns.filter(c => c.default).map(c => c.id)));
+  };
   
   // Sorting state
   const [sortColumn, setSortColumn] = useState<'title' | 'year' | 'runtime' | null>(null);
@@ -392,6 +423,17 @@ export function ComparisonResults({
     return Array.from(libs).sort();
   }, [result.items]);
 
+  // Group libraries by server for nested display
+  const librariesByServer = useMemo(() => {
+    const grouped: Record<string, string[]> = {};
+    availableLibraries.forEach(lib => {
+      const [server] = lib.split(' / ');
+      if (!grouped[server]) grouped[server] = [];
+      grouped[server].push(lib);
+    });
+    return grouped;
+  }, [availableLibraries]);
+
   const availableResolutions = useMemo(() => {
     const res = new Set<string>();
     result.items.forEach(item => {
@@ -508,13 +550,6 @@ export function ComparisonResults({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Selection
-        </Button>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="bg-muted/50 border-b">
@@ -545,9 +580,9 @@ export function ComparisonResults({
                         }
                         setVennSelectedLibraries(newSet);
                       }}
-                      className={`px-3 py-1.5 text-xs border transition-colors cursor-pointer ${
+                      className={`px-3 py-1.5 text-xs border transition-colors cursor-pointer rounded-full ${
                         !isSelected && vennSelectedLibraries.size >= 2 ? 'opacity-50 cursor-not-allowed' : ''
-                      } ${!isSelected && vennSelectedLibraries.size < 2 ? 'hover:opacity-80' : ''}`}
+                      } ${vennSelectedLibraries.size < 2 ? 'hover:opacity-80' : ''}`}
                       style={{
                         backgroundColor: displayColor,
                         color: displayTextColor,
@@ -570,7 +605,7 @@ export function ComparisonResults({
             
             {filteredSimilarities.length > 0 && (
               <div>
-                <h4 className="font-medium text-sm bg-muted/50 border-b px-3 py-2 -mx-6 mb-2">Library Similarity</h4>
+                <h4 className="font-medium text-sm bg-muted/50 border-b border-t px-3 py-2 -mx-6 mb-2">Library Similarity</h4>
                 <div className="space-y-2">
                   {filteredSimilarities.map((sim, i) => {
                     // Determine bar color based on library pair
@@ -632,7 +667,7 @@ export function ComparisonResults({
             </div>
 
             <div>
-              <h4 className="font-medium text-sm bg-muted/50 border-b px-3 py-2 -mx-6 mb-3">Library Breakdown</h4>
+              <h4 className="font-medium text-sm bg-muted/50 border-b border-t px-3 py-2 -mx-6 mb-3">Library Breakdown</h4>
               <div className="grid grid-cols-2 gap-2">
                 {/* Base library card */}
                 <div 
@@ -712,7 +747,7 @@ export function ComparisonResults({
                   </Button>
                 </>
               )}
-              <Button onClick={handleDownload} size="sm">
+              <Button variant="ghost" className="border"onClick={handleDownload} size="sm">
                 <Download className="h-4 w-4 mr-1" />
                 CSV
               </Button>
@@ -721,10 +756,10 @@ export function ComparisonResults({
         </CardHeader>
         <CardContent>
           {/* Filters - Collapsible */}
-          <div className="mb-4 border rounded-lg">
+          <div className="mb-4">
             <button
               onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-              className="w-full flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg"
+              className={`w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted border-t border-l border-r ${filtersCollapsed ? 'border-b' : ''}`}
             >
               <span className="text-sm font-medium flex items-center gap-2">
                 <Filter className="h-4 w-4" />
@@ -734,8 +769,7 @@ export function ComparisonResults({
               {filtersCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </button>
             
-            {!filtersCollapsed && (
-            <div className="p-4 pt-0 space-y-4">
+            <div className={`p-4 space-y-4 border-l border-r border-b ${filtersCollapsed ? 'hidden' : ''}`}>
             {/* Row 1: Search */}
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Search</label>
@@ -746,52 +780,107 @@ export function ComparisonResults({
                   placeholder="Search titles..."
                   value={pendingSearch}
                   onChange={(e) => setPendingSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 h-10 border rounded-md bg-background text-sm"
+                  className="w-full pl-10 pr-4 h-10 border bg-background text-sm"
                 />
               </div>
             </div>
 
             {/* Row 2: Library and Resolution */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Library filter */}
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              {/* Library filter - nested by server */}
+              <div className="flex flex-col">
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Libraries</label>
-                <select
-                  multiple
-                  value={pendingLibraries ? Array.from(pendingLibraries) : availableLibraries}
-                  onChange={(e) => {
-                    const selected = new Set(Array.from(e.target.selectedOptions, opt => opt.value));
-                    setPendingLibraries(selected);
-                  }}
-                  className="w-full px-3 border rounded-md bg-background text-sm h-24"
-                  title="Filter by library (Ctrl+click for multiple)"
-                >
-                  {availableLibraries.map(lib => (
-                    <option key={lib} value={lib}>{lib}</option>
-                  ))}
-                </select>
+                <div className="border bg-background text-sm flex-1 max-h-32 overflow-y-auto">
+                  {Object.entries(librariesByServer).map(([server, libs]) => {
+                    const selectedLibs = pendingLibraries || new Set(availableLibraries);
+                    const allSelected = libs.every(lib => selectedLibs.has(lib));
+                    
+                    const toggleServer = () => {
+                      const newSet = new Set(selectedLibs);
+                      if (allSelected) {
+                        libs.forEach(lib => newSet.delete(lib));
+                      } else {
+                        libs.forEach(lib => newSet.add(lib));
+                      }
+                      setPendingLibraries(newSet);
+                    };
+                    
+                    const toggleLibrary = (lib: string) => {
+                      const newSet = new Set(selectedLibs);
+                      if (newSet.has(lib)) {
+                        newSet.delete(lib);
+                      } else {
+                        newSet.add(lib);
+                      }
+                      setPendingLibraries(newSet);
+                    };
+                    
+                    return (
+                      <div key={server}>
+                        <button
+                          type="button"
+                          onClick={toggleServer}
+                          className="w-full text-left py-1 text-xs font-medium text-muted-foreground"
+                        >
+                          <span className="px-2">{server}</span>
+                        </button>
+                        {libs.map(lib => {
+                          const libName = lib.split(' / ')[1];
+                          const isSelected = selectedLibs.has(lib);
+                          return (
+                            <button
+                              key={lib}
+                              type="button"
+                              onClick={() => toggleLibrary(lib)}
+                              className={`w-full text-left py-0.5 text-xs transition-colors ${
+                                isSelected ? 'bg-muted-foreground/20 dark:bg-muted-foreground/40' : 'hover:bg-muted'
+                              }`}
+                            >
+                              <span className="pl-5 pr-2">{libName}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
                 <div className="text-xs text-muted-foreground mt-1">
                   {!pendingLibraries || pendingLibraries.size === availableLibraries.length ? 'All libraries' : `${pendingLibraries.size} selected`}
                 </div>
               </div>
 
-              {/* Resolution filter */}
-              <div>
+              {/* Resolution filter - click to toggle */}
+              <div className="flex flex-col">
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Resolutions</label>
-                <select
-                  multiple
-                  value={pendingResolutions ? Array.from(pendingResolutions) : availableResolutions}
-                  onChange={(e) => {
-                    const selected = new Set(Array.from(e.target.selectedOptions, opt => opt.value));
-                    setPendingResolutions(selected);
-                  }}
-                  className="w-full px-3 border rounded-md bg-background text-sm h-24"
-                  title="Filter by resolution (Ctrl+click for multiple)"
-                >
-                  {availableResolutions.map(res => (
-                    <option key={res} value={res}>{res}</option>
-                  ))}
-                </select>
+                <div className="border bg-background text-sm flex-1 max-h-32 overflow-y-auto">
+                  {availableResolutions.map(res => {
+                    const selectedRes = pendingResolutions || new Set(availableResolutions);
+                    const isSelected = selectedRes.has(res);
+                    
+                    const toggleResolution = () => {
+                      const newSet = new Set(selectedRes);
+                      if (newSet.has(res)) {
+                        newSet.delete(res);
+                      } else {
+                        newSet.add(res);
+                      }
+                      setPendingResolutions(newSet);
+                    };
+                    
+                    return (
+                      <button
+                        key={res}
+                        type="button"
+                        onClick={toggleResolution}
+                        className={`w-full text-left py-1 text-xs transition-colors ${
+                          isSelected ? 'bg-muted-foreground/20 dark:bg-muted-foreground/40' : 'hover:bg-muted'
+                        }`}
+                      >
+                        <span className="px-2">{res}</span>
+                      </button>
+                    );
+                  })}
+                </div>
                 <div className="text-xs text-muted-foreground mt-1">
                   {!pendingResolutions || pendingResolutions.size === availableResolutions.length ? 'All resolutions' : `${pendingResolutions.size} selected`}
                 </div>
@@ -802,23 +891,23 @@ export function ComparisonResults({
             <div className="flex flex-col sm:flex-row gap-4 items-end">
               <div className="flex-1">
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Year Range</label>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-end">
                   <input
                     type="number"
                     placeholder={`Min (${yearBounds.min})`}
                     value={pendingYearRange.min ?? ''}
                     onChange={(e) => setPendingYearRange(prev => ({ ...prev, min: e.target.value ? parseInt(e.target.value) : null }))}
-                    className="w-full h-10 px-3 border rounded-md bg-background text-sm"
+                    className="w-full h-8 px-3 border bg-background text-sm"
                     min={yearBounds.min}
                     max={yearBounds.max}
                   />
-                  <span className="text-muted-foreground">-</span>
+                  <span className="text-muted-foreground h-8">-</span>
                   <input
                     type="number"
                     placeholder={`Max (${yearBounds.max})`}
                     value={pendingYearRange.max ?? ''}
                     onChange={(e) => setPendingYearRange(prev => ({ ...prev, max: e.target.value ? parseInt(e.target.value) : null }))}
-                    className="w-full h-10 px-3 border rounded-md bg-background text-sm"
+                    className="w-full h-8 px-3 border bg-background text-sm"
                     min={yearBounds.min}
                     max={yearBounds.max}
                   />
@@ -837,159 +926,239 @@ export function ComparisonResults({
               </div>
             </div>
             </div>
-            )}
           </div>
 
-          <div ref={tableRef} className="max-h-[500px] overflow-y-auto">
+          {/* Column Configuration - Collapsible */}
+          <div className="mb-4">
+            <button
+              onClick={() => setColumnsCollapsed(!columnsCollapsed)}
+              className={`w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted border-t border-l border-r ${filtersCollapsed ? 'border-b' : ''}`}
+            >
+              <span className="text-sm font-medium flex items-center gap-2">
+                <Settings2 className="h-4 w-4" />
+                Columns
+                {visibleColumns.size !== allColumns.filter(c => c.default).length && (
+                  <span className="text-xs text-muted-foreground">(customized)</span>
+                )}
+              </span>
+              {columnsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </button>
+            
+            <div className={`p-4 space-y-4 border-l border-r border-b ${columnsCollapsed ? 'hidden' : ''}`}>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {allColumns.map((col) => (
+                  <button
+                    key={col.id}
+                    onClick={() => toggleColumn(col.id)}
+                    disabled={col.id === 'title'}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${
+                      visibleColumns.has(col.id)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background hover:bg-muted border-border'
+                    } ${col.id === 'title' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    {col.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <Button variant="ghost" size="sm" className="border" onClick={resetColumns}>
+                  Reset to Default
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div ref={tableRef} className="max-h-[500px] -mx-6 overflow-y-auto border-t">
             <table className="w-full">
               <thead className="sticky top-0 bg-muted border-b" style={{ zIndex: 10 }}>
                 <tr>
-                  <th 
-                    className="text-left py-1.5 px-2 font-medium cursor-pointer hover:bg-muted/80 select-none"
-                    onClick={() => toggleSort('title')}
-                  >
-                    <span className="flex items-center gap-1">
-                      Title
-                      <ArrowUpDown className={`h-3 w-3 ${sortColumn === 'title' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    </span>
-                  </th>
-                  <th 
-                    className="text-left py-1.5 px-2 font-medium w-20 cursor-pointer hover:bg-muted/80 select-none"
-                    onClick={() => toggleSort('year')}
-                  >
-                    <span className="flex items-center gap-1">
-                      Year
-                      <ArrowUpDown className={`h-3 w-3 ${sortColumn === 'year' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    </span>
-                  </th>
-                  <th 
-                    className="text-left py-1.5 px-2 font-medium w-24 cursor-pointer hover:bg-muted/80 select-none"
-                    onClick={() => toggleSort('runtime')}
-                  >
-                    <span className="flex items-center gap-1">
-                      Runtime
-                      <ArrowUpDown className={`h-3 w-3 ${sortColumn === 'runtime' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    </span>
-                  </th>
-                  <th className="text-left py-1.5 px-2 font-medium">Available In</th>
+                  {visibleColumns.has('title') && (
+                    <th 
+                      className="text-left py-1.5 px-2 font-medium cursor-pointer hover:bg-muted/80 select-none"
+                      onClick={() => toggleSort('title')}
+                    >
+                      <span className="flex items-center gap-1">
+                        Title
+                        <ArrowUpDown className={`h-3 w-3 ${sortColumn === 'title' ? 'text-primary' : 'text-muted-foreground'}`} />
+                      </span>
+                    </th>
+                  )}
+                  {visibleColumns.has('year') && (
+                    <th 
+                      className="text-left py-1.5 px-2 font-medium w-20 cursor-pointer hover:bg-muted/80 select-none"
+                      onClick={() => toggleSort('year')}
+                    >
+                      <span className="flex items-center gap-1">
+                        Year
+                        <ArrowUpDown className={`h-3 w-3 ${sortColumn === 'year' ? 'text-primary' : 'text-muted-foreground'}`} />
+                      </span>
+                    </th>
+                  )}
+                  {visibleColumns.has('runtime') && (
+                    <th 
+                      className="text-left py-1.5 px-2 font-medium w-24 cursor-pointer hover:bg-muted/80 select-none"
+                      onClick={() => toggleSort('runtime')}
+                    >
+                      <span className="flex items-center gap-1">
+                        Runtime
+                        <ArrowUpDown className={`h-3 w-3 ${sortColumn === 'runtime' ? 'text-primary' : 'text-muted-foreground'}`} />
+                      </span>
+                    </th>
+                  )}
+                  {visibleColumns.has('rating') && (
+                    <th className="text-left py-1.5 px-2 font-medium w-20">Rating</th>
+                  )}
+                  {visibleColumns.has('audienceRating') && (
+                    <th className="text-left py-1.5 px-2 font-medium w-20">Audience</th>
+                  )}
+                  {visibleColumns.has('resolution') && (
+                    <th className="text-left py-1.5 px-2 font-medium w-24">Resolution</th>
+                  )}
+                  {visibleColumns.has('availableIn') && (
+                    <th className="text-left py-1.5 px-2 font-medium">Available In</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {paginatedItems.map((item, i) => (
                   <tr key={i} className={`border-b last:border-0 hover:bg-muted/30 group ${i % 2 === 1 ? 'bg-muted/20' : ''}`}>
-                    <td className="py-1 px-2">
-                      <div className="flex items-center gap-2">
-                        {item.type === 'movie' ? (
-                          <Film className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        ) : (
-                          <Tv className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        )}
-                        <span>{item.title}</span>
-                        <button
-                          onClick={() => navigator.clipboard.writeText(item.title)}
-                          className="p-1 opacity-0 group-hover:opacity-100 hover:bg-muted rounded transition-opacity"
-                          title="Copy title"
-                        >
-                          <Copy className="h-3 w-3 text-muted-foreground" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="py-1 px-2 text-muted-foreground font-mono-nums">
-                      {item.year || '—'.padStart(4, '\u00A0')}
-                    </td>
-                    <td className="py-1 px-2 text-muted-foreground font-mono-nums">
-                      {item.duration ? formatDuration(item.duration).padStart(6, '\u00A0') : '—'.padStart(6, '\u00A0')}
-                    </td>
-                    <td className="py-1 px-2 text-sm">
-                      <div className="flex flex-wrap gap-1">
-                        {item.sources.map((source, j) => (
-                          <LibraryBadge 
-                            key={j} 
-                            source={source} 
-                            color={libraryColors.get(`${source.serverName} - ${source.libraryName}`)}
-                          />
-                        ))}
-                      </div>
-                    </td>
+                    {visibleColumns.has('title') && (
+                      <td className="py-1 px-2">
+                        <div className="flex items-center gap-2">
+                          {item.type === 'movie' ? (
+                            <Film className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          ) : (
+                            <Tv className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          )}
+                          <span>{item.title}</span>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(item.title)}
+                            className="p-1 opacity-0 group-hover:opacity-100 hover:bg-muted rounded transition-opacity"
+                            title="Copy title"
+                          >
+                            <Copy className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    {visibleColumns.has('year') && (
+                      <td className="py-1 px-2 text-muted-foreground font-mono-nums">
+                        {item.year || '—'.padStart(4, '\u00A0')}
+                      </td>
+                    )}
+                    {visibleColumns.has('runtime') && (
+                      <td className="py-1 px-2 text-muted-foreground font-mono-nums">
+                        {item.duration ? formatDuration(item.duration).padStart(6, '\u00A0') : '—'.padStart(6, '\u00A0')}
+                      </td>
+                    )}
+                    {visibleColumns.has('rating') && (
+                      <td className="py-1 px-2 text-muted-foreground font-mono-nums">
+                        {item.rating ? item.rating.toFixed(1) : '—'}
+                      </td>
+                    )}
+                    {visibleColumns.has('audienceRating') && (
+                      <td className="py-1 px-2 text-muted-foreground font-mono-nums">
+                        {item.audienceRating ? item.audienceRating.toFixed(1) : '—'}
+                      </td>
+                    )}
+                    {visibleColumns.has('resolution') && (
+                      <td className="py-1 px-2 text-muted-foreground text-xs">
+                        {item.sources[0]?.media?.[0]?.resolution || '—'}
+                      </td>
+                    )}
+                    {visibleColumns.has('availableIn') && (
+                      <td className="py-1 px-2 text-sm">
+                        <div className="flex flex-wrap gap-1">
+                          {item.sources.map((source, j) => (
+                            <LibraryBadge 
+                              key={j} 
+                              source={source} 
+                              color={libraryColors.get(`${source.serverName} - ${source.libraryName}`)}
+                            />
+                          ))}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
-            
-            {/* Pagination controls */}
-            {totalPages > 1 && (
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground font-mono-nums">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground font-mono-nums">
-                    {filteredItems.length.toLocaleString()} items
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setCurrentPage(1); scrollToTable(); }}
-                    disabled={currentPage === 1}
-                  >
-                    First
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setCurrentPage(p => p - 1); scrollToTable(); }}
-                    disabled={currentPage === 1}
-                  >
-                    Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setCurrentPage(p => p + 1); scrollToTable(); }}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setCurrentPage(totalPages); scrollToTable(); }}
-                    disabled={currentPage === totalPages}
-                  >
-                    Last
-                  </Button>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Go to:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={totalPages}
-                    value={goToPage}
-                    onChange={(e) => setGoToPage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleGoToPage()}
-                    className="w-16 px-2 py-1 text-sm border bg-background"
-                    placeholder="#"
-                  />
-                  <Button variant="outline" size="sm" onClick={handleGoToPage}>
-                    Go
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={scrollToTable}
-                  >
-                    ↑ Top
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
+          
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-center sm:justify-between gap-4 -mx-6 -mb-6 p-3 border-t bg-background">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground font-mono-nums">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground font-mono-nums">
+                  {filteredItems.length.toLocaleString()} items
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setCurrentPage(1); scrollToTable(); }}
+                  disabled={currentPage === 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setCurrentPage(p => p - 1); scrollToTable(); }}
+                  disabled={currentPage === 1}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setCurrentPage(p => p + 1); scrollToTable(); }}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setCurrentPage(totalPages); scrollToTable(); }}
+                  disabled={currentPage === totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Go to:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={goToPage}
+                  onChange={(e) => setGoToPage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleGoToPage()}
+                  className="w-16 px-2 py-1 text-sm border bg-background"
+                  placeholder="#"
+                />
+                <Button variant="outline" size="sm" onClick={handleGoToPage}>
+                  Go
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={scrollToTable}
+                >
+                  ↑ Top
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

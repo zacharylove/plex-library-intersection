@@ -46,7 +46,6 @@ interface ComparisonLoaderProps {
   compareLibraries: PlexLibrary[];
   servers: PlexServer[];
   onBack: () => void;
-  onNewComparison?: () => void;
 }
 
 interface LoadingState {
@@ -61,7 +60,6 @@ export function ComparisonLoader({
   compareLibraries,
   servers,
   onBack,
-  onNewComparison,
 }: ComparisonLoaderProps) {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -159,8 +157,6 @@ export function ComparisonLoader({
         result={result}
         baseLibraryWithItems={baseLibraryWithItems}
         comparedLibrariesWithItems={comparedLibrariesWithItems}
-        onBack={onBack}
-        onNewComparison={onNewComparison}
       />
     );
   }

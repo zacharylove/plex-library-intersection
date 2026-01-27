@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
 import { getAllLibraries } from '@/lib/plex-api';
 import type { PlexLibrary, PlexServer } from '@/lib/types';
-import { Loader2, Server, Film, Tv, LogOut } from 'lucide-react';
+import { Loader2, Server, Film, Tv } from 'lucide-react';
 
 interface LibrarySelectorProps {
   onCompare: (
@@ -19,7 +17,7 @@ interface LibrarySelectorProps {
 }
 
 export function LibrarySelector({ onCompare }: LibrarySelectorProps) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [servers, setServers] = useState<PlexServer[]>([]);
@@ -118,27 +116,6 @@ export function LibrarySelector({ onCompare }: LibrarySelectorProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {user?.thumb && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.thumb}
-              alt={user.username}
-              className="w-10 h-10 rounded-full"
-            />
-          )}
-          <div>
-            <p className="font-medium">{user?.username}</p>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-          </div>
-        </div>
-        <Button variant="ghost" size="sm" onClick={logout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Step 1: Select Your Library</CardTitle>
@@ -204,28 +181,24 @@ export function LibrarySelector({ onCompare }: LibrarySelectorProps) {
                         <Server className="h-4 w-4" />
                         {serverName}
                       </div>
-                      <div className="space-y-2 ml-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 ml-6">
                         {compatibleLibs.map((lib) => {
                           const id = getLibraryId(lib);
+                          const isSelected = selectedLibraries.has(id);
                           return (
-                            <div key={id} className="flex items-center space-x-2 p-2 -mx-2">
-                              <Checkbox
-                                id={id}
-                                checked={selectedLibraries.has(id)}
-                                onCheckedChange={() => toggleLibrary(id)}
-                              />
-                              <Label
-                                htmlFor={id}
-                                className="flex items-center gap-2 cursor-pointer flex-1"
-                              >
-                                {lib.type === 'movie' ? (
-                                  <Film className="h-4 w-4" />
-                                ) : (
-                                  <Tv className="h-4 w-4" />
-                                )}
-                                {lib.title}
-                              </Label>
-                            </div>
+                            <Button
+                              key={id}
+                              variant={isSelected ? 'default' : 'outline'}
+                              className={`justify-start h-auto py-3 cursor-pointer ${!isSelected ? 'hover:bg-muted dark:hover:bg-muted/80' : ''}`}
+                              onClick={() => toggleLibrary(id)}
+                            >
+                              {lib.type === 'movie' ? (
+                                <Film className="h-4 w-4 mr-2 shrink-0" />
+                              ) : (
+                                <Tv className="h-4 w-4 mr-2 shrink-0" />
+                              )}
+                              <span className="text-left">{lib.title}</span>
+                            </Button>
                           );
                         })}
                       </div>

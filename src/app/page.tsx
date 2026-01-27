@@ -6,8 +6,9 @@ import { useTheme } from '@/lib/theme-context';
 import { PlexLogin } from '@/components/plex-login';
 import { LibrarySelector } from '@/components/library-selector';
 import { ComparisonLoader } from '@/components/comparison-loader';
+import { AccountMenu } from '@/components/account-menu';
 import type { PlexLibrary, PlexServer } from '@/lib/types';
-import { Loader2, Sun, Moon } from 'lucide-react';
+import { Loader2, Sun, Moon, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type AppState =
@@ -66,11 +67,7 @@ export default function Home() {
     setAppState({ stage: 'select' });
   };
 
-  const handleClearStorage = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setAppState({ stage: 'select' });
-  };
-
+  
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -83,19 +80,28 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <div className="w-full py-8 px-6">
         <header className="mb-8">
-          <div className="flex justify-end mb-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
+          <div className="flex justify-between items-center gap-2 mb-4">
+            <div>
+              {user && appState.stage === 'compare' && (
+                <Button variant="ghost" onClick={handleBack}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Selection
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center">
+              <AccountMenu />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold">Plex Library Intersection</h1>
-          </div>
+          
         </header>
 
         {!user ? (
@@ -106,7 +112,6 @@ export default function Home() {
             compareLibraries={appState.compareLibraries}
             servers={appState.servers}
             onBack={handleBack}
-            onNewComparison={handleClearStorage}
           />
         ) : (
           <LibrarySelector onCompare={handleCompare} />
