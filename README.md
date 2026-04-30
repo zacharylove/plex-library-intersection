@@ -2,6 +2,11 @@
 
 A web-based interface for comparing Plex libraries. Find movies and shows in friends' libraries that you don't have.
 
+Here's a (highly compressed) demo video of the tool in action:
+https://github.com/user-attachments/assets/fb5ffe86-8fd4-435b-a6d2-69c23c2d358e
+
+
+
 ## Features
 
 - **Plex OAuth Login** - Secure authentication via Plex
